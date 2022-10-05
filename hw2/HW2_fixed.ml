@@ -81,6 +81,10 @@ type term =
     TmTrue
   |TmFalse
   |TmIf of (term * term * term)
+  |TmZero
+  |TmSucc of term
+  |TmPred of term
+  |TmIsZero of term
   |TmError;;
 
 exception BAD_TERM of term;;
@@ -198,7 +202,10 @@ let rec  aux_parse tokens = (* parse if..then..else terms *)
   |[] -> raise EMPTY
   |("if"::rest) -> parse_if rest    (* I wrote _tokens_ instead of _rest_ :(  *)
   |("("::rest) -> parse_paren rest
-  (* REMAINING CASES *)                    
+  (* REMAINING CASES *)
+  |("pred"::rest) -> parse_pred rest
+  |("succ"::rest) -> parse_succ rest
+  |("iszero"::rest) -> parse_iszero                  
   |x ->aux_parse_subterm x
 and
   aux_parse_subterm tokens = (* handles atomic constants: true,false,etc *)
@@ -226,8 +233,15 @@ and
       if remainder = [] then raise EMPTY else                     
         let (tok_rparen::remainder_after_rparen) = remainder in
 	(tm,remainder_after_rparen) (* throw away right parenthesis *)
+and
+  parse_pred rest = 
+        
+and
+  parse_succ rest =
 
-
+and
+  parse_is_zero rest =
+  
 (* parse:string -> term *)
 let parse str =  fst (aux_parse (lexx str));;
 

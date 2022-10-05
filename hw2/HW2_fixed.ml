@@ -1,3 +1,4 @@
+(* Team GGEZ: Nelson, Andres, Stanley, Skye *)
 (* A parser and evaluator for a toy boolean language 
    Some defs set up for expansion to NB = boolean + arith language
    EXERCISE:  expand parser+evaluator to NB. Both small-step and 
@@ -112,7 +113,7 @@ exception NOT_A_VALUE;;
    want to allow underscores in variable names *)
 let alph x = 
   let n = Char.code x in
-  96< n && n < 122;;
+  96< n && n < 123 || n = 48;;
 
 
 exception BAD_CHAR;;
@@ -197,7 +198,7 @@ finishing with -->  ;;
   arithmetic, e.g. 0. 
 *)
 
-let rec  aux_parse tokens = (* parse if..then..else terms *)
+let rec aux_parse tokens = (* parse if..then..else terms *)
   match tokens with
   |[] -> raise EMPTY
   |("if"::rest) -> parse_if rest    (* I wrote _tokens_ instead of _rest_ :(  *)
@@ -205,7 +206,7 @@ let rec  aux_parse tokens = (* parse if..then..else terms *)
   (* REMAINING CASES *)
   |("pred"::rest) -> parse_pred rest
   |("succ"::rest) -> parse_succ rest
-  |("iszero"::rest) -> parse_iszero                  
+  |("iszero"::rest) -> parse_is_zero rest             
   |x ->aux_parse_subterm x
 and
   aux_parse_subterm tokens = (* handles atomic constants: true,false,etc *)
@@ -213,7 +214,8 @@ and
     |[] -> raise EMPTY
     |("true"::tokens_rest) -> (TmTrue,tokens_rest)
     |("false"::tokens_rest) -> (TmFalse,tokens_rest)
-    (* ADD REMAINING VALUE for arithmetic *)                               
+    (* ADD REMAINING VALUE for arithmetic *)       
+    |("0"::tokens_rest) -> (TmZero, tokens_rest)                        
     |x -> ((print_list (["x = "]@x)); (TmError,[])) (* debug errors *)
 and
   parse_if rest =
@@ -229,19 +231,24 @@ and
   | _ -> raise (BAD_IF "missing THEN")
 and
   parse_paren rest =
-      let (tm, remainder) = aux_parse rest in
-      if remainder = [] then raise EMPTY else                     
-        let (tok_rparen::remainder_after_rparen) = remainder in
-	(tm,remainder_after_rparen) (* throw away right parenthesis *)
+  let (tm, remainder) = aux_parse rest in
+  if remainder = [] then raise EMPTY else  (* if missing right parenthesis, then raise error?*)                  
+    let (tok_rparen::remainder_after_rparen) = remainder in	
+      (tm,remainder_after_rparen) (* throw away right parenthesis *)
 and
   parse_pred rest = 
-        
+  let (tm, remainder) = aux_parse rest in
+    (TmPred(tm), remainder) 
 and
   parse_succ rest =
-
+  let (tm, remainder) = aux_parse rest in
+    (TmSucc(tm), remainder)
 and
-  parse_is_zero rest =
+  parse_is_zero rest = 
+  let (tm, remainder) = aux_parse rest in
+    (TmIsZero(tm), remainder)
   
+
 (* parse:string -> term *)
 let parse str =  fst (aux_parse (lexx str));;
 
@@ -256,13 +263,20 @@ let rec is_a_num_value x = etc. etc.
 
 *)
 
+let rec is_a_num_value x =
+  match x with 
+  |0 -> true
+  |TmSucc(nv) -> is_a_num_value nv
+  (* |TmPred(nv) -> is_a_num_value nv *)
+  | x -> false;;
+
 let is_a_value x = 
    match x with
    |TmTrue -> true
    |TmFalse -> true
    (* ADD NEW CASES  for arith HERE *)
+   |t when is_a_num_value t -> true
    |x -> false;;
-
 
 
 exception NO_RULE;;
@@ -273,11 +287,29 @@ exception NO_RULE;;
 (* eval_step:term -> term *)
 let rec eval_step t =
   match t with
+  (* |TmZero -> t   *)
   |TmIf(TmTrue,t2,t3) -> t2
   |TmIf(TmFalse,t2,t3) -> t3
   |TmIf(t1,t2,t3) ->
-     let t1' = eval_step t1 in
-       TmIf(t1',t2,t3)
+    let t1' = eval_step t1 in
+      TmIf(t1',t2,t3)
+  |TmSucc(t1) ->
+    let t1' = eval_step t1 in
+      TmSucc(t1')
+  |TmPred(TmZero) ->
+    TmZero
+  |TmPred(TmSucc(nv1)) when is_a_num_value nv1 ->
+    nv1
+  |TmPred(t1) ->
+    let t1' = eval_step t1 in
+      TmPred(t1')
+  |TmIsZero(TmZero)->
+    TmTrue
+  |TmIsZero(TmSucc(nv1)) when is_a_num_value nv1 ->
+    TmFalse
+  |TmIsZero(t1) ->
+    let t1' = eval_step t1 in
+      TmIsZero(t1')
   |_ -> raise NO_RULE;;
 
 (* and now,  the evaluation sequences it induces *)
@@ -308,10 +340,20 @@ let rec big_step t =
     |TmTrue -> TmTrue
     |TmFalse -> TmFalse
     |TmIf(t1,t2,t3) when (big_step t1 = TmTrue) ->
-	 big_step t2
-     |TmIf(t1,t2,t3) when (big_step t1 = TmFalse) ->
-       big_step t3
+	    big_step t2
+    |TmIf(t1,t2,t3) when (big_step t1 = TmFalse) ->
+      big_step t3
      (* ADD ARITH CASES HERE *)         
+    |TmSucc(t1) when (is_a_num_value t1 = TmTrue) ->
+      big_step t1
+    |TmPred(t1) when (big_step t1 = TmZero) ->
+      big_step t1
+    |TmPred(t1) when (big_step t1 = TmSucc(t1')) ->
+      big_step t1'
+    |TmIsZero(t1) when (big_step t1 = TmZero) ->
+      TmTrue
+    |TmIsZero(t1) when (big_step t1 = TmSucc(t1')) ->
+      TmFalse
     |_ -> raise NO_RULE;;
 
 (* doesn't raise exceptions *)
@@ -319,10 +361,20 @@ let rec ne_big_step t =
     match t with
     |TmTrue -> TmTrue
     |TmFalse -> TmFalse
-    |TmIf(t1,t2,t3)  when (ne_big_step t1 = TmTrue) ->
-       (ne_big_step t2)
+    |TmIf(t1,t2,t3) when (ne_big_step t1 = TmTrue) ->
+      (ne_big_step t2)
     |TmIf(t1,t2,t3) when (ne_big_step t1 = TmFalse) ->
-       (ne_big_step t3)
+      (ne_big_step t3)
+    |TmSucc(t1) when (is_a_num_value t1 = TmTrue) ->
+      (ne_big_step t1)
+    |TmPred(t1) when (ne_big_step t1 = TmZero) ->
+      (ne_big_step t1)
+    |TmPred(t1) when (ne_big_step t1 = TmSucc(t1')) ->
+      (ne_big_step t1')
+    |TmIsZero(t1) when (ne_big_step t1 = TmZero) ->
+      (TmTrue)
+    |TmIsZero(t1) when (ne_big_step t1 = TmSucc(t1')) ->
+      (TmFalse)
     |_ -> TmError;;  (* return an error term so as show a way to not raise an
                       * exception which aborts VScode *) 
 
@@ -385,6 +437,10 @@ pp "if";; (* generates an exception *)
 
 (* YOUR TASK : add interesting examples including arithmetic. include mixed
  * boolean and numerical: if (iszero (succ 0)) then succ(succ(0)) etc....  *)     
-						  
-						  
+"succ 0"
+"pred 0"
+"isZero( (pred(succ(pred(succ(0))))) )"
+"if (iszero (succ 0)) then succ(succ(0)) else succ(0)"						  
+"if (iszero (pred(pred(succ(succ(0))))) then succ(succ(0)) else pred(0))"						  
+
 

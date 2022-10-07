@@ -265,7 +265,7 @@ let rec is_a_num_value x = etc. etc.
 
 let rec is_a_num_value x =
   match x with 
-  |0 -> true
+  |TmZero -> true
   |TmSucc(nv) -> is_a_num_value nv
   (* |TmPred(nv) -> is_a_num_value nv *)
   | x -> false;;
@@ -344,7 +344,7 @@ let rec big_step t =
     |TmIf(t1,t2,t3) when (big_step t1 = TmFalse) ->
       big_step t3
      (* ADD ARITH CASES HERE *)         
-    |TmSucc(t1) when (is_a_num_value t1 = TmTrue) ->
+    |TmSucc(t1) when is_a_num_value t1 ->
       big_step t1
     |TmPred(t1) when (big_step t1 = TmZero) ->
       big_step t1
@@ -437,10 +437,10 @@ pp "if";; (* generates an exception *)
 
 (* YOUR TASK : add interesting examples including arithmetic. include mixed
  * boolean and numerical: if (iszero (succ 0)) then succ(succ(0)) etc....  *)     
-"succ 0"
+(* "succ 0"
 "pred 0"
 "isZero( (pred(succ(pred(succ(0))))) )"
 "if (iszero (succ 0)) then succ(succ(0)) else succ(0)"						  
-"if (iszero (pred(pred(succ(succ(0))))) then succ(succ(0)) else pred(0))"						  
+"if (iszero (pred(pred(succ(succ(0))))) then succ(succ(0)) else pred(0))"						   *)
 
 

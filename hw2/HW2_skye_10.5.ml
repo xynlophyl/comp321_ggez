@@ -278,7 +278,7 @@ let is_a_value x =
 
 
 
-exception NO_RULE;;
+exception NO_RULE_VAL;;
 
 (* single small step eval:
 ***********************
@@ -342,10 +342,9 @@ let rec big_step t =
     |TmSucc(t1) when (is_a_num_value (big_step t1)) ->
        TmSucc(big_step t1)
     |TmPred(t1) when (big_step t1 = Tm0) -> Tm0
+    |TmPred(t1) -> TmPred(big_step t1)
     |TmPred(TmSucc(t1)) when (is_a_num_value (big_step t1)) ->
        big_step t1
-    |TmPred(TmPred(t1)) when (is_a_num_value (big_step t1)) ->
-        TmPred(TmPred(big_step t1))
     |TmIszero(t1) when (big_step t1 = Tm0) -> TmTrue
     |TmIszero(t1) when (is_a_num_value (big_step t1)) -> TmFalse
     | x when is_a_value(x) -> x
@@ -451,5 +450,5 @@ big_eval_parse "if (iszero (pred(pred(succ(succ(0)))))) then succ(succ(0)) else 
 
 
 print_string "\narith example 6";;
-pp "succ (pp if (iszero (pred(pred(succ(succ(0))))) then succ(succ(0)) else pred(0))";;
+pp "succ (if (iszero (pred succ succ 0)) then succ succ 0  else pred 0)";;
 

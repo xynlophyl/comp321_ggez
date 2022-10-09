@@ -454,14 +454,13 @@
       print_string "succ";
       print_val t1
     |TmPred(t1) -> 
-      print_string "succ";
-      print_val t1
+      print_string "pred";
+      print_val t
     |_ -> print_string "not a good value!\n";;
   
 
   let eval_tester s1 s2 =
     (print_string "\nTESTING: "; print_string s1; print_string ", \nexpected evaluation:"; print_string s2; print_string "\n";
-    print_string "\nparse: "; print_val (parse s1); print_string "\n";
     print_string "eval_parse: "; print_val (eval_parse s1); print_string "\n";
     print_string "eval_all_parse: "; print_val (eval_all_parse s1); print_string "\n";
     print_string "big_eval_parse: "; print_val (big_eval_parse s1); print_string "\n";

@@ -5,6 +5,8 @@
  * MISSING: substition and evaluators for both strategies and
   some utility functions 
          no = Normal Order    cbv = Call By Value
+
+THE Parts you have to complete are marked with a ===>
 *)
 
 (* required: implementation of 
@@ -115,10 +117,10 @@ let dt tm = print_string(display_term tm);;
 
 let print_term t = print_string (show t);;
 
-(* test whether char x is alphabetical *)
+(* test whether char x is alphanumerical--lower case with =, (, ), period, ; and : for later stuff *)
 let alph x = 
   let n = Char.code x in
-  94< n && n < 123 || 47<n && n <58;;
+  94< n && n < 123 || 39<n && n <62;;
 
 
 exception BAD_CHAR;;
@@ -167,9 +169,9 @@ let lexx x = aux_lexx (explode x);;
 
 (* end lexer *)
 
-  
-exception PAREN_EXCEPTION;;
-
+exception EMPTY of string
+exception PAREN_EXCEPTION
+exception BAD_TERM
 
   
 (*  PARSER to deal with:
@@ -213,27 +215,23 @@ and (* this is for mutually recursive defs *)
   |["false"] -> (TmFalse,[])
   |("true"::rest) -> aux_parseA TmTrue rest
   |("false"::rest) -> aux_parseA TmFalse rest    
-  |("("::rest) ->  (* parenthesized term *)
-    let (tm',rest') = (parseL rest) in
-    if rest'=[]
-    then
-      (TmError,[]) (* error because there should have been at least a
-   right parenthesis there*) 
-    else
-      let (rparen::after_paren) = rest' in
-      aux_parseA tm' after_paren
+  |("("::rest) -> parse_paren rest (* parenthesized term *)
   |("\\"::rest) -> (* abstraction *)
-    let  (tok_var::after_var) = rest in
-    let (tok_dot::after_dot) = after_var in
-    let (tm,rest') = (parseL after_dot) in
-    aux_parseA (TmAbs(tok_var,tm)) rest'
+    (match rest with
+     |[] -> raise (EMPTY "after lambda")
+     |(tok_var::"."::after_dot) ->  let (tm,rest') = (parseL after_dot) in
+       aux_parseA (TmAbs(tok_var,tm)) rest'
+     |(_::_::after_dot) -> raise (EMPTY "no dot")
+     |[_] -> raise (EMPTY "nothing after \\var")
+    )
   |("if"::rest) -> let (t1,rest1) = parseOneL rest in
 		   let (t2,rest2) = parseOneL rest1 in
 		   let (t3,rest3) = parseOneL rest2 in
 		   aux_parseA (TmIf(t1,t2,t3)) rest3
   |(s::t) -> aux_parseA (TmVar(s)) t (* single var or application *)
   and
-    (* grabs terms in an application one at a time and associates applications to the left *)
+    (* grabs terms in an application one at a time and associates 
+     *  applications to the left *)
   aux_parseA tm lt =
   match lt with
   |[] -> (tm,[])
@@ -251,11 +249,19 @@ and (* this is for mutually recursive defs *)
   |(")"::t) -> (tm,lt)
   |[s] -> (TmApp(tm,TmVar(s)),[])
   |(s::t) ->
-    (* t can't be empty, but you'll get a warning that [] ism't handled *)
-    let (a::t') = t in
-    if a=")" (* you reached the end of an application sequence *)
-    then (TmApp(tm,TmVar(s)),t)
-    else aux_parseA (TmApp(tm,TmVar(s))) t
+    (match t with
+     |[] -> raise (EMPTY "body")
+     |(a::t') when a = ")" -> (TmApp(tm,TmVar(s)),t)
+     |(a :: t') -> (aux_parseA (TmApp(tm,TmVar(s))) t)
+    )
+and
+  parse_paren rest =
+  let (tm',rest') = (parseL rest) in
+  match rest' with
+  |[] -> raise  PAREN_EXCEPTION  (* error because there should have been at least a
+                                    right parenthesis there*)
+  |(")"::after_paren) -> aux_parseA tm' after_paren
+  |_ -> raise BAD_TERM ;;
     
 
 
@@ -359,7 +365,10 @@ let rec rename_all_bd_with_fresh tm =
     TmAbs(fresh,rename_all_bd_with_fresh u')
   |t -> t
 
-(* substition:
+(*  ===> UNCOMMENT THIS SECTION BEFORE COMPLETING
+
+ SUBSTITION
+ ^^^^^^^^^^^: 
 subst:string -> term -> term -> term
 computes the result of substituting 's' (a term) for TmVar(var) in 'term'
 AVOIDING CAPTURE
@@ -368,7 +377,7 @@ AVOIDING CAPTURE
 (*
 let rec subst var s term =
   match term with
-  |TmTrue -> 
+  |TmTrue ->  (* MISSING *)
   |TmFalse ->
   |TmVar y -> if (y=var)
 	      then s
@@ -392,16 +401,20 @@ exception NO_RULE1;;
   
 exception BAD_GUARD;;
 
-(* THE REST OF THE CODE WILL cause ERRORS, SINCE IT IS INCOMPLETE!! *)
+(* ===> THE REST OF THE CODE WILL cause ERRORS, SINCE IT IS INCOMPLETE!!
+for now it has been COMMENTED OUT! UNCOMMENT IT. *)
 
 (* is a value*)
 (* is_val: term -> bool *)
 (* to be completed by YOU *)
-let is_val tm = True (* you have to write the code for this *)
+let is_val tm = true (* you have to remove the true and write the code for this *)
 
 (* computes one step of evaluation using call-by-value rules *)
   (* you need to complete this, using substitution for the redex case
    *  TmApp (TmAbs (x,t1),t2) when is_val t2 ->   *)
+
+(* lots to fill in below
+
 let rec eval_step_cbv t =
   match t with
   | TmIf(TmTrue,t1,t2) -> 
@@ -485,11 +498,17 @@ let top_no_eval t =
 
 (* Put in tons of examples to test this stuff *)
 
+
+
 (* I added some Church numeral utilities *)
+
+(* make_num_body: nat -> term   2 |--> TmApp(TmVar("s"),TmApp(TmVar("s"),TmVar("z"))) *)
 let rec make_num_body x =
   match x with
     |0 -> TmVar "z"
     |n -> TmApp(TmVar "s",make_num_body (n-1));;
+
+(* num2church:nat --> term  2 |--> TmAbs("s",TmAbs("z",TmApp(TmVar("s"),TmApp(TmVar("s"),TmVar("z"))))) *)
 
 let num2church x = TmAbs("s",TmAbs("z",make_num_body x));;
 
@@ -549,11 +568,11 @@ let makesucc t =
     TmApp(succ,t');;
 
 (* testing *)
-
+print_string "some tests of the code : add your own examples"
 let l1 = "(\\x.\\y.x (\\x.x)) (y x)";;
 let t1 = parse l1;;
 
 rename_all_bd_with_fresh t1;;
-
+*)
 
 

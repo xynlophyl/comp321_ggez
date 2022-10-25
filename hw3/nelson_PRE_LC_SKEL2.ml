@@ -374,22 +374,41 @@ computes the result of substituting 's' (a term) for TmVar(var) in 'term'
 AVOIDING CAPTURE
  *)
 (* to be completed by YOU *)
-(*
+
+let rec is_FV y fv = 
+  match fv with
+  |x::xs -> if (x = y) then true else (is_FV y xs)
+  |[] -> false
+
 let rec subst var s term =
   match term with
-  |TmTrue ->  (* MISSING *)
-  |TmFalse ->
+  |TmTrue ->  TmTrue (* MISSING *)
+  |TmFalse -> TmFalse
   |TmVar y -> if (y=var)
 	      then s
 	      else term
-  |TmApp(t1,t2) ->
-  |TmAbs(y,t) -> (* here is where you must avoid capture by generating *)
+  |TmApp(t1,t2) -> let t1' = subst var s t1 in
+    let t2' = subst var s t2 in
+      TmApp(t1', t2')
+  |TmAbs(y,t) -> if (y = var)
+    then TmAbs(y, t)
+    else let fv = free_vars s in
+      if ( is_FV y fv )
+      then let t' = rename_all_bd_with_fresh t in
+        let t'' = subst var s t' in
+          TmAbs(y, t'')
+      else let t' = subst var s t in
+        TmAbs(y, t')(* here is where you must avoid capture by generating *)
                  (* a new var and renaming. Remember to check if y=var *)
     
-  |TmIf(t1,t2,t3) ->
+  |TmIf(t1,t2,t3) -> 
+    let t1' = subst var s t1 in
+      let t2' = subst var s t2 in
+        let t3' = subst var s t3 in
+          TmIf(t1',t2',t3')
   |TmError -> TmError
 
- *)
+
 
 (*  EVALUATION *)
 

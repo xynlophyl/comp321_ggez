@@ -375,37 +375,20 @@ AVOIDING CAPTURE
  *)
 (* to be completed by YOU *)
 
-let rec is_FV y fv = 
-  match fv with
-  |x::xs -> if (x = y) then true else (is_FV y xs)
-  |[] -> false
-
-let rec subst var s term =
+let rec subst var s term = 
   match term with
-  |TmTrue ->  TmTrue (* MISSING *)
+  |TmTrue ->  TmTrue
   |TmFalse -> TmFalse
   |TmVar y -> if (y=var)
-	      then s
+	      then s 
 	      else term
-  |TmApp(t1,t2) -> let t1' = subst var s t1 in
-    let t2' = subst var s t2 in
-      TmApp(t1', t2')
-  |TmAbs(y,t) -> if (y = var)
-    then TmAbs(y, t)
-    else let fv = free_vars s in
-      if ( is_FV y fv )
-      then let t' = rename_all_bd_with_fresh t in
-        let t'' = subst var s t' in
-          TmAbs(y, t'')
-      else let t' = subst var s t in
-        TmAbs(y, t')(* here is where you must avoid capture by generating *)
+  |TmApp(t1,t2) -> TmApp(subst var s t1, subst var s t2)
+  |TmAbs(y,t) -> if (y=var)
+        then TmAbs(y, t)
+        else 
+    (* here is where you must avoid capture by generating *)
                  (* a new var and renaming. Remember to check if y=var *)
-    
-  |TmIf(t1,t2,t3) -> 
-    let t1' = subst var s t1 in
-      let t2' = subst var s t2 in
-        let t3' = subst var s t3 in
-          TmIf(t1',t2',t3')
+  |TmIf(t1,t2,t3) ->
   |TmError -> TmError
 
 
@@ -426,34 +409,22 @@ for now it has been COMMENTED OUT! UNCOMMENT IT. *)
 (* is a value*)
 (* is_val: term -> bool *)
 (* to be completed by YOU *)
-let is_val tm = (* you have to remove the true and write the code for this *)
-  match tm with
-  |TmTrue -> true
-  |TmFalse -> true
-  |TmIf(_, _, _) -> false
-  |TmVar(_) -> false
-  |TmAbs(_, _) -> true
-  |TmApp(_, _) -> false
-  |TmError -> false;;
+let is_val tm = true (* you have to remove the true and write the code for this *)
 
 (* computes one step of evaluation using call-by-value rules *)
   (* you need to complete this, using substitution for the redex case
    *  TmApp (TmAbs (x,t1),t2) when is_val t2 ->   *)
 
-(* lots to fill in below*)
+(* lots to fill in below
 
 let rec eval_step_cbv t =
   match t with
-  | TmIf(TmTrue,t1,t2) -> t1
-  | TmIf(TmFalse,t1,t2) -> t2
-  | TmIf(b,t1,t2) ->
-    let b' = eval_step_cbv b in TmIf(b', t1, t2)
-  | TmApp (TmAbs (x,t1),t2) when is_val t2 ->
-    subst x t2 t1
-  | TmApp (t1,t2) when is_val t1 ->
-    let t2' = eval_step_cbv t2 in TmApp(t1, t2')
-  | TmApp (t1,t2) ->
-    let t1' = eval_step_cbv t1 in TmApp(t1', t2)
+  | TmIf(TmTrue,t1,t2) -> 
+  | TmIf(TmFalse,t1,t2) -> 
+  | TmIf(b,t1,t2) -> 
+  | TmApp (TmAbs (x,t1),t2) when is_val t2 -> 
+  | TmApp (t1,t2) when is_val t1 -> 
+  | TmApp (t1,t2) -> 
   | _ -> raise NO_RULE;;
 
 (* eval_cbv 
@@ -468,37 +439,25 @@ let rec cbv_eval t =
 (* resets the free-variable counter to 0 before evaluating *)
 let top_cbv_eval t =
   x:= 0;
-  cbv_eval t;;
+  cbv_eval t
 
 
 
 (* Normal order evaluation *)
-
+s
 (* tests whether or not input term is in normal form: to be completed by YOU.
 TmTrue,TmFalse are considered normal forms *)
 	   
 let rec is_a_nf tm = 
   match tm with
-  |TmTrue -> true
-  |TmFalse -> true
-  |TmIf(v,_,_) -> 
-    if v = TmTrue then false
-    else if v = TmFalse then false
-    else true
-    (* only a normal form if v is a normal form and is
+  |TmTrue -> 
+  |TmFalse ->
+  |TmIf(v,_,_) -> (* only a normal form if v is a normal form and is
   NOT true or false, i.e. it's garbage *) 
-  |TmVar( _ ) -> true
-  |TmApp(TmAbs(_,_),_) -> false
-  |TmApp(v,w) -> 
-    if is_a_nf v then
-      if is_a_nf w then
-        true
-      else
-        false
-    else 
-      false(* careful *)
-  |TmAbs(_,t) -> true
-  |TmError -> false;;
+  |TmVar( _ ) ->
+  |TmApp(TmAbs(_,_),_) 
+  |TmApp(v,w) -> (* careful *)
+  |TmAbs(_,t) -> 
 
 
 exception TM_ERROR
@@ -511,18 +470,16 @@ let rec no_step tm =
    * really help *)
   |TmTrue -> raise TM_ERROR
   |TmFalse -> raise TM_ERROR
-  |TmIf(TmTrue,t1,t2) -> t1
-  |TmIf(TmFalse,t1,t2) -> t2
-  |TmIf(b,t1,t2) ->
-    let b' = no_step b in TmIf(b', t1, t2)(* evaluate b for one step *)
-  |TmAbs(x,t) ->
-    let t' = no_step t in TmAbs(x, t')(* evaluate t for one step. t can't be a normal form *)
-  |TmApp(TmAbs(x,t),u) -> 
-    subst x u t(* apply beta-reduction *)
-  |TmApp(t1,t2) -> (* t1 is not an abstraction: else this would have
+  |TmIf(TmTrue,t1,t2) ->
+  |TmIf(TmFalse,t1,t2) -> 
+  |TmIf(b,t1,t2) -> (* evaluate b for one step *)
+  |TmAbs(x,t) -> (* evaluate t for one step. t can't be a normal form *)
+  |TmApp(TmAbs(x,t),u) -> (* apply beta-reduction *)
+  |TmApp(t1,t2) ->  (* t1 is not an abstraction: else this would have
   matched the preceding line *)
-    if (is_a_nf t1) then 
-      let t2'= no_step t2 in TmApp(t1,t2')
+    if (is_a_nf t1)  
+    then let t2'=no_step t2 in
+	 TmApp(t1,t2')
     else
       let t1' = no_step t1 in
       TmApp(t1',t2)
@@ -618,28 +575,6 @@ let l1 = "(\\x.\\y.x (\\x.x)) (y x)";;
 let t1 = parse l1;;
 
 rename_all_bd_with_fresh t1;;
+*)
 
-(* tests for no_eval*)
-
-match no_eval (TmApp(TmAbs("x", TmVar("x")), TmVar("y"))) with
-  TmVar("y") -> print_string("Case Passed\n")
-  |_ -> print_string("Case Not Passed\n");; 
-
-match no_eval (TmApp(TmAbs("x", TmApp(TmVar("x"), TmVar("w"))), TmVar("y"))) with
-  TmApp(TmVar("y"), TmVar("w")) -> print_string("Case Passed\n")
-  |_ -> print_string("Case Not Passed\n");;
-
-match no_eval (TmApp(TmAbs("x", TmApp((TmVar("x"), TmVar("y"))) ), TmAbs("w", TmVar("w")))) with
-  (TmVar("y"))  -> print_string("Case Passed\n")
-  |_ -> print_string("Case Not Passed\n");;
-
-match no_eval (TmApp(TmAbs("x", TmApp((TmVar("x"), TmVar("y"))) ), TmAbs("w", TmVar("w")))) with
-  (TmVar("y"))  -> print_string("Case Passed\n")
-  |_ -> print_string("Case Not Passed\n");;
-
-match no_eval (TmApp(TmApp(TmAbs("x", TmVar("x")) , TmAbs("x", TmVar("x"))) ,TmVar("u"))) with
-  |TmVar("u") -> print_string("Case Passed\n")
-  |_ -> print_string("Case Not Passed\n");;
-
-(* tests for substitution*)
 

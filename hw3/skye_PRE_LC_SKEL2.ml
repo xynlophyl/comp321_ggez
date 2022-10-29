@@ -637,9 +637,24 @@ match no_eval (TmApp(TmAbs("x", TmApp((TmVar("x"), TmVar("y"))) ), TmAbs("w", Tm
   (TmVar("y"))  -> print_string("Case Passed\n")
   |_ -> print_string("Case Not Passed\n");;
 
-match no_eval (TmApp(TmApp(TmAbs("x", TmVar("x")) , TmAbs("x", TmVar("x"))) ,TmVar("u"))) with
+match no_eval (TmApp(TmApp(TmAbs("x", TmVar("x")) , TmAbs("y", TmVar("y"))) ,TmVar("u"))) with
   |TmVar("u") -> print_string("Case Passed\n")
   |_ -> print_string("Case Not Passed\n");;
 
-(* tests for substitution*)
+(* tests for cbv*)
 
+match cbv_eval (TmVar("y")) with
+  TmVar("y") -> print_string("Case Passed\n")
+  |_ -> print_string("Case Not Passed\n");; 
+
+match cbv_eval (TmIf(TmTrue, TmFalse, TmTrue)) with
+  TmFalse -> print_string("Case Passed\n")
+  |_ -> print_string("Case Not Passed\n");; 
+
+  match cbv_eval (TmIf(TmIf(TmTrue, TmFalse, TmTrue), TmFalse, TmVar("x"))) with
+  TmVar("x") -> print_string("Case Passed\n")
+  |_ -> print_string("Case Not Passed\n");; 
+
+match cbv_eval (TmIf(TmIf(TmTrue, TmTrue, TmFalse), TmIf(TmFalse, TmVar("x"), TmVar("y")), TmVar("z"))) with
+  TmVar("y") -> print_string("Case Passed\n")
+  |_ -> print_string("Case Not Passed\n");; 

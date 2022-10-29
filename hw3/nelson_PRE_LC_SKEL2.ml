@@ -397,7 +397,7 @@ let rec subst var s term =
       then let t' = rename_all_bd_with_fresh t in
         let t'' = subst var s t' in
           TmAbs(y, t'')
-      else let t' = subst var s t in
+     else let t' = subst var s t in
         TmAbs(y, t')(* here is where you must avoid capture by generating *)
                  (* a new var and renaming. Remember to check if y=var *)
     

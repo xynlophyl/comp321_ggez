@@ -393,10 +393,9 @@ let rec subst var s term =
   |TmAbs(y,t) -> if (y = var)
     then TmAbs(y, t)
     else let fv = free_vars s in
-      if ( is_FV y fv )
-      then let t' = rename_all_bd_with_fresh t in
-        let t'' = subst var s t' in
-          TmAbs(y, t'')
+      if ( is_FV y fv ) then 
+        let term' = rename_all_bd_with_fresh term in
+          subst var s term'  
       else let t' = subst var s t in
         TmAbs(y, t')(* here is where you must avoid capture by generating *)
                  (* a new var and renaming. Remember to check if y=var *)
@@ -613,11 +612,45 @@ let makesucc t =
     TmApp(succ,t');;
 
 (* testing *)
-print_string "some tests of the code : add your own examples"
+print_string "some tests of the code : add your own examples";;
 let l1 = "(\\x.\\y.x (\\x.x)) (y x)";;
 let t1 = parse l1;;
 
 rename_all_bd_with_fresh t1;;
+
+(* tests for subst*)
+
+match subst ("x") (TmVar("z")) (TmVar "x") with 
+  TmVar "z"-> print_string("Case Passed\n")
+  |_ -> print_string("Case Not Passed\n");;
+
+match subst ("x") (TmVar("z")) (TmVar "y") with 
+  TmVar "y"-> print_string("Case Passed\n")
+  |_ -> print_string("Case Not Passed\n");;
+
+  match subst ("x") (TmVar("z")) (TmApp(TmVar("x"), TmVar("y"))) with 
+  (TmApp(TmVar("z"), TmVar("y")))-> print_string("Case Passed\n")
+  |_ -> print_string("Case Not Passed\n");;
+
+  
+match subst ("x") (TmVar("z")) (TmAbs("y", (TmApp(TmVar "x", TmVar "y")))) with 
+  (TmAbs("y", (TmApp(TmVar "z", TmVar "y"))))-> print_string("Case Passed\n")
+  |_ -> print_string("Case Not Passed\n");;
+
+match subst ("x") (TmVar("y")) (TmAbs("x", (TmApp(TmVar "x", TmVar "y")))) with
+  (TmAbs("x", (TmApp(TmVar "x", TmVar "y"))))-> print_string("Case Passed\n")
+  |_ -> print_string("Case Not Passed\n");;
+
+match subst ("x") (TmVar("y")) (TmAbs("y", (TmApp(TmVar "x", TmVar "y")))) with
+  TmAbs(s1, TmApp(TmVar(s2), TmVar(s3)))-> 
+    if s1 = s3 then 
+      print_string("Case Passed\n")
+    else
+      print_string("Case Not Passed\n")
+
+  |_ -> print_string("Case Not Passed\n");; 
+
+
 
 (* tests for no_eval*)
 

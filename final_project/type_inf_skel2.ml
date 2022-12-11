@@ -1,4 +1,10 @@
-
+ (* *********final 321 fall 2022*******************************
+    GROUP: ggez
+    Nelson Lin nlin01wes
+    Andres Cojuangco acojuangco@wes
+    Skye Gao sgao01@wes
+    Stanley Markman smarkman@wes
+  ********************************************************* *)
 (* The ocaml types we have to define *)
 (* 1: UNTYPED lambda terms *)
 type term =

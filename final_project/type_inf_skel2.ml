@@ -1,3 +1,10 @@
+(* *********final 321 fall 2022*******************************
+    GROUP: ggez
+    Andres Cojuangco acojuangco@wesleyan.edu
+    Stanley Markman smarkman@wesleyan.edu
+    Nelson Lin nlin01@wesleyan.edu
+    Skye Gao sgao01@wesleyan.edu
+  ********************************************************* *)
 
 (* The ocaml types we have to define *)
 (* 1: UNTYPED lambda terms *)

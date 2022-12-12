@@ -1,10 +1,4 @@
- (* *********final 321 fall 2022*******************************
-    GROUP: ggez
-    Nelson Lin nlin01wes
-    Andres Cojuangco acojuangco@wes
-    Skye Gao sgao01@wes
-    Stanley Markman smarkman@wes
-  ********************************************************* *)
+
 (* The ocaml types we have to define *)
 (* 1: UNTYPED lambda terms *)
 type term =
@@ -426,10 +420,10 @@ exception ERR of (arrow_type * arrow_type)
 let rec unify lst =
   match lst with
       [] -> []
-  | (Eq(x,y)::rest) when x=y -> (* you FINISH this. Just skip this
+  | (Eq(x,y)::rest) when x=y -> unify rest(* you FINISH this. Just skip this
                                  * identity equation *)
   | (Eq(Var(x),t)::rest) when occurs (Var(x)) (t) -> raise FAIL
-  | (Eq(Var(x),t) :: rest) -> (* FINISH: x does NOT OCCUR in t so COMPOSE
+  | (Eq(Var(x),t) :: rest) -> [(Var(x),t)] $ (unify (apply_to_list [(Var(x),t)] rest)) (* FINISH: x does NOT OCCUR in t so COMPOSE
        * the subst [(Var(x),t)] with UNIFY the result of applying  [(Var(x),t)]
                                  * to the rest of the list
                                 *)
@@ -461,9 +455,9 @@ let make_new_var () =
 let rec decorate tm =
   x:=0;
   match tm with
-    |(TmVar y) -> 
-    |(TmApp (t1,t2)) -> 
-    |(TmAbs (y,t)) ->
+    |(TmVar y) -> TyVar y
+    |(TmApp (t1,t2)) -> TyApp(decorate t1, decorate t2)
+    |(TmAbs (y,t)) -> TyAbs(y, Var(make_new_var()), decorate t)
 
 
 exception ARROW_TYPE_EXPECTED
@@ -538,11 +532,12 @@ let rec make_constraints ctx tylm ty =
  *)
 
 let type_inf ctx str =  (* FINISH IT *)
-
-
-
-
-  
+  let t1 = parse str in 
+  let t2 = decorate t1 in 
+  let u = make_constraints [] t2 (Var("A")) in
+  let u' = unify u in 
+  let t' = apply2term u' t2 in
+  show_judgment ctx t' (typeof ctx t');;
 
 (* tests *)
 print_string "\n******************* TESTS *************\n";;
@@ -555,19 +550,43 @@ let t1 = (parse "\\x.\\y.x y") in
     let t' = apply2term u' t2 in
     (showtylam t',showtype (typeof [] t'));;
 
+let t1 = (parse "\\x.\\y.x y") in 
+    let t2 = decorate t1 in
+    let u = make_constraints [] t2 (Var("A")) in
+    let u' = unify u in
+    let t' = apply2term u' t2 in
+    print_string (showtylam t');;
+  
+let t1 = (parse "\\x.\\y.x y") in 
+    let t2 = decorate t1 in
+    let u = make_constraints [] t2 (Var("A")) in
+    let u' = unify u in
+    let t' = apply2term u' t2 in
+    print_string (showtype (typeof [] t'));;
+
 print_string "\n******** type inference test problems********\n ";;
+print_string(type_inf [] "\\x.x");;
+print_string("\n");;
+print_string(type_inf [] "\\x.\\y.x (y x)");;
 print_string "#1 : INFERTYPE \\x.\\y.\\z.(x z) (y z)\n";;
 type_inf [] "\\x.\\y.\\z.(x z) (y z)";;
+print_string(type_inf [] "\\x.\\y.\\z.(x z) (y z)");;
 print_string "#2 : INFERTYPE \\x.x x\n";;
-  type_inf [] "\\x.x x";;
+  (*type_inf [] "\\x.x x";;
+  print_string(type_inf [] "\\x.x x");;*)
 print_string "#3 : INFERTYPE \\x.\\y.y(x y)\n";;
     type_inf [] "\\x.\\y.y(x y)";;
+    print_string(type_inf [] "\\x.\\y.y(x y)");;
 print_string "#4 : INFERTYPE \\x.\\y.(y x) y\n";;
-      type_inf [] "\\x.\\y.(y x) y";;
+      (*type_inf [] "\\x.\\y.(y x) y";;
+      print_string(type_inf [] "\\x.\\y.(y x) y");;*)
 print_string "#5 : INFERTYPE \\x.\\y.x (x y)\n";;
 type_inf [] "\\x.\\y.x (x y)";;
+print_string(type_inf [] "\\x.\\y.x (x y)");;
 
 print_string "#6 : INFERTYPE \\x.\\y.x y x\n";;
 	type_inf [] "\\x.\\y.x y x";;
+  print_string(type_inf [] "\\x.\\y.x y x");;
+
 
 

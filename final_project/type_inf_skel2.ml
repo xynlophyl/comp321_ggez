@@ -460,7 +460,6 @@ let make_new_var () =
    FINISH
    USE make_new_var() *)
 let rec decorate tm =
-  x:=0;
   match tm with
     |(TmVar y) -> TyVar y
     |(TmApp (t1,t2)) -> TyApp(decorate t1, decorate t2)
